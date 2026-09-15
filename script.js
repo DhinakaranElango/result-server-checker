@@ -1,7 +1,3 @@
-/* =========================================================
-   ANNA UNIVERSITY RESULT SERVER MONITOR
-   ========================================================= */
-
 "use strict";
 
 
@@ -10,14 +6,19 @@
    ========================================================= */
 
 const servers = [
+
     {
         name: "Anna University Result Server",
         url: "https://coe.annauniv.edu/home/index.php"
     }
+
 ];
 
-const CHECK_INTERVAL = 30;       // seconds
-const REQUEST_TIMEOUT = 10000;   // milliseconds
+
+const CHECK_INTERVAL = 30;
+
+const REQUEST_TIMEOUT = 10000;
+
 const MAX_HISTORY = 10;
 
 
@@ -38,25 +39,32 @@ let isChecking = false;
    ELEMENTS
    ========================================================= */
 
-const elements = {
-    themeToggle: document.getElementById("themeToggle"),
+const themeToggle =
+    document.getElementById("themeToggle");
 
-    checkButton: document.getElementById("checkButton"),
+const checkButton =
+    document.getElementById("checkButton");
 
-    overallStatus: document.getElementById("overallStatus"),
+const overallStatus =
+    document.getElementById("overallStatus");
 
-    overallPing: document.getElementById("overallPing"),
+const overallPing =
+    document.getElementById("overallPing");
 
-    lastChecked: document.getElementById("lastChecked"),
+const lastChecked =
+    document.getElementById("lastChecked");
 
-    nextCheck: document.getElementById("nextCheck"),
+const nextCheck =
+    document.getElementById("nextCheck");
 
-    loading: document.getElementById("loading"),
+const loading =
+    document.getElementById("loading");
 
-    servers: document.getElementById("servers"),
+const serversContainer =
+    document.getElementById("servers");
 
-    history: document.getElementById("history")
-};
+const historyContainer =
+    document.getElementById("history");
 
 
 /* =========================================================
@@ -65,7 +73,9 @@ const elements = {
 
 function setupTheme() {
 
-    const savedTheme = localStorage.getItem("anna-theme");
+    const savedTheme =
+        localStorage.getItem("anna-theme");
+
 
     if (savedTheme === "dark") {
 
@@ -73,35 +83,32 @@ function setupTheme() {
 
     }
 
-    updateThemeButton();
 
+    updateThemeButton();
 }
 
 
 function updateThemeButton() {
 
-    if (!elements.themeToggle) {
+    if (!themeToggle) {
         return;
     }
 
-    if (document.body.classList.contains("dark")) {
 
-        elements.themeToggle.textContent = "☀️";
+    const dark =
+        document.body.classList.contains("dark");
 
-        elements.themeToggle.setAttribute(
-            "aria-label",
-            "Switch to light mode"
-        );
 
-    } else {
+    themeToggle.textContent =
+        dark ? "☀️" : "🌙";
 
-        elements.themeToggle.textContent = "🌙";
 
-        elements.themeToggle.setAttribute(
-            "aria-label",
-            "Switch to dark mode"
-        );
-    }
+    themeToggle.setAttribute(
+        "aria-label",
+        dark
+            ? "Switch to light mode"
+            : "Switch to dark mode"
+    );
 }
 
 
@@ -109,72 +116,86 @@ function toggleTheme() {
 
     document.body.classList.toggle("dark");
 
-    const darkMode =
+
+    const dark =
         document.body.classList.contains("dark");
+
 
     localStorage.setItem(
         "anna-theme",
-        darkMode ? "dark" : "light"
+        dark ? "dark" : "light"
     );
+
 
     updateThemeButton();
 }
 
 
 /* =========================================================
-   CHECK SINGLE SERVER
+   CHECK ONE SERVER
    ========================================================= */
 
 async function checkServer(server) {
 
-    const startTime = performance.now();
+    const start =
+        performance.now();
 
-    const controller = new AbortController();
 
-    const timeout = setTimeout(() => {
+    const controller =
+        new AbortController();
 
-        controller.abort();
 
-    }, REQUEST_TIMEOUT);
+    const timeout =
+        setTimeout(
+            () => controller.abort(),
+            REQUEST_TIMEOUT
+        );
 
 
     try {
 
         await fetch(
-            server.url + "?_=" + Date.now(),
+            server.url +
+            "?_=" +
+            Date.now(),
             {
                 method: "GET",
-
                 mode: "no-cors",
-
                 cache: "no-store",
-
                 signal: controller.signal
             }
         );
 
 
-        const responseTime = Math.round(
-            performance.now() - startTime
-        );
-
         clearTimeout(timeout);
 
+
+        const ping =
+            Math.round(
+                performance.now() - start
+            );
+
+
         return {
+
             name: server.name,
 
             url: server.url,
 
             online: true,
 
-            ping: responseTime
+            ping: ping
+
         };
+
 
     } catch (error) {
 
         clearTimeout(timeout);
 
+
         return {
+
             name: server.name,
 
             url: server.url,
@@ -183,9 +204,11 @@ async function checkServer(server) {
 
             ping: null,
 
-            error: error.name === "AbortError"
-                ? "Request timed out"
-                : "Connection failed"
+            error:
+                error.name === "AbortError"
+                    ? "Request timed out"
+                    : "Connection failed"
+
         };
     }
 }
@@ -201,17 +224,22 @@ async function checkServers() {
         return;
     }
 
+
     isChecking = true;
+
 
     setLoading(true);
 
     renderChecking();
 
+
     try {
 
-        const results = await Promise.all(
-            servers.map(server => checkServer(server))
-        );
+        const results =
+            await Promise.all(
+                servers.map(checkServer)
+            );
+
 
         renderServers(results);
 
@@ -221,17 +249,22 @@ async function checkServers() {
 
         updateHistory(results);
 
+
     } catch (error) {
 
         console.error(
-            "Server check error:",
+            "Server check failed:",
             error
         );
 
-        elements.overallStatus.textContent = "ERROR";
 
-        elements.overallStatus.style.color =
+        overallStatus.textContent =
+            "ERROR";
+
+
+        overallStatus.style.color =
             "var(--danger)";
+
 
     } finally {
 
@@ -245,52 +278,62 @@ async function checkServers() {
 
 
 /* =========================================================
-   LOADING STATE
+   LOADING
    ========================================================= */
 
-function setLoading(loading) {
+function setLoading(active) {
 
-    if (!elements.loading) {
-        return;
+    if (loading) {
+
+        loading.textContent =
+            active
+                ? "Checking..."
+                : "Auto-check: 30s";
     }
 
-    elements.loading.textContent =
-        loading
-            ? "Checking..."
-            : "Auto-check: 30s";
+
+    if (checkButton) {
+
+        checkButton.disabled =
+            active;
 
 
-    if (elements.checkButton) {
-
-        elements.checkButton.disabled = loading;
-
-        elements.checkButton.textContent =
-            loading
-                ? "⏳ Checking..."
-                : "🔄 Check Now";
+        checkButton.innerHTML =
+            active
+                ? "⏳ <span>Checking...</span>"
+                : "🔄 <span>Check Server Now</span>";
     }
 }
 
 
 /* =========================================================
-   CHECKING SERVER UI
+   CHECKING UI
    ========================================================= */
 
 function renderChecking() {
 
-    if (!elements.servers) {
+    if (!serversContainer) {
         return;
     }
 
-    elements.servers.innerHTML = servers.map(server => {
 
-        return `
+    serversContainer.innerHTML =
+        servers.map(server => `
+
             <div class="server-card">
 
                 <div class="server-top">
 
-                    <div class="server-name">
-                        ${escapeHtml(server.name)}
+                    <div>
+
+                        <div class="server-name">
+                            ${escapeHtml(server.name)}
+                        </div>
+
+                        <div class="server-url">
+                            ${escapeHtml(server.url)}
+                        </div>
+
                     </div>
 
                     <div class="status checking">
@@ -299,82 +342,140 @@ function renderChecking() {
 
                 </div>
 
-                <div class="ping">
-                    Checking server response...
-                </div>
 
-                <div class="server-url">
-                    ${escapeHtml(server.url)}
+                <div class="server-details">
+
+                    <div class="detail">
+
+                        <span>
+                            Status
+                        </span>
+
+                        <strong>
+                            Checking...
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail">
+
+                        <span>
+                            Response
+                        </span>
+
+                        <strong>
+                            --
+                        </strong>
+
+                    </div>
+
                 </div>
 
             </div>
-        `;
 
-    }).join("");
+        `).join("");
 }
 
 
 /* =========================================================
-   RENDER SERVER RESULTS
+   SERVER RESULTS
    ========================================================= */
 
 function renderServers(results) {
 
-    if (!elements.servers) {
+    if (!serversContainer) {
         return;
     }
 
-    elements.servers.innerHTML = results.map(result => {
 
-        const statusClass =
-            result.online
-                ? "online"
-                : "down";
+    serversContainer.innerHTML =
+        results.map(result => {
 
-        const statusText =
-            result.online
-                ? "ONLINE"
-                : "OFFLINE";
+            const statusClass =
+                result.online
+                    ? "online"
+                    : "down";
 
 
-        const pingText =
-            result.online
-                ? `Response Time: ${result.ping} ms`
-                : `Response Time: -- (${escapeHtml(result.error || "Unavailable")})`;
+            const statusText =
+                result.online
+                    ? "ONLINE"
+                    : "OFFLINE";
 
 
-        return `
-            <div class="server-card">
+            const response =
+                result.online
+                    ? `${result.ping} ms`
+                    : "--";
 
-                <div class="server-top">
 
-                    <div class="server-name">
-                        ${escapeHtml(result.name)}
+            return `
+
+                <div
+                    class="server-card ${result.online ? "" : "down"}">
+
+                    <div class="server-top">
+
+                        <div>
+
+                            <div class="server-name">
+                                ${escapeHtml(result.name)}
+                            </div>
+
+                            <div class="server-url">
+                                ${escapeHtml(result.url)}
+                            </div>
+
+                        </div>
+
+
+                        <div class="status ${statusClass}">
+                            ${statusText}
+                        </div>
+
                     </div>
 
-                    <div class="status ${statusClass}">
-                        ${statusText}
+
+                    <div class="server-details">
+
+                        <div class="detail">
+
+                            <span>
+                                Status
+                            </span>
+
+                            <strong>
+                                ${statusText}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="detail">
+
+                            <span>
+                                Response
+                            </span>
+
+                            <strong>
+                                ${response}
+                            </strong>
+
+                        </div>
+
                     </div>
 
                 </div>
 
-                <div class="ping">
-                    ${pingText}
-                </div>
+            `;
 
-                <div class="server-url">
-                    ${escapeHtml(result.url)}
-                </div>
-
-            </div>
-        `;
-
-    }).join("");
+        }).join("");
 }
 
 
 /* =========================================================
-   UPDATE SUMMARY
+   SUMMARY
    ========================================================= */
 
 function updateSummary(results) {
@@ -383,69 +484,66 @@ function updateSummary(results) {
         return;
     }
 
-    const onlineServers =
-        results.filter(result => result.online);
+
+    const online =
+        results.filter(
+            result => result.online
+        );
 
 
-    const allOnline =
-        onlineServers.length === results.length;
+    if (online.length === results.length) {
 
+        overallStatus.textContent =
+            "ONLINE";
 
-    const anyOnline =
-        onlineServers.length > 0;
-
-
-    /* Overall status */
-
-    if (allOnline) {
-
-        elements.overallStatus.textContent = "ONLINE";
-
-        elements.overallStatus.style.color =
+        overallStatus.style.color =
             "var(--success)";
 
-    } else if (anyOnline) {
+    } else if (online.length > 0) {
 
-        elements.overallStatus.textContent =
+        overallStatus.textContent =
             "PARTIAL";
 
-        elements.overallStatus.style.color =
+        overallStatus.style.color =
             "var(--warning)";
 
     } else {
 
-        elements.overallStatus.textContent =
+        overallStatus.textContent =
             "OFFLINE";
 
-        elements.overallStatus.style.color =
+        overallStatus.style.color =
             "var(--danger)";
     }
 
 
-    /* Average ping */
-
     const pings =
-        onlineServers
+        online
             .map(result => result.ping)
-            .filter(ping => Number.isFinite(ping));
+            .filter(
+                value =>
+                    Number.isFinite(value)
+            );
 
 
-    if (pings.length > 0) {
+    if (pings.length) {
 
-        const averagePing =
+        const average =
             Math.round(
                 pings.reduce(
-                    (sum, ping) => sum + ping,
+                    (sum, value) =>
+                        sum + value,
                     0
                 ) / pings.length
             );
 
-        elements.overallPing.textContent =
-            averagePing;
+
+        overallPing.textContent =
+            average;
 
     } else {
 
-        elements.overallPing.textContent =
+        overallPing.textContent =
             "--";
     }
 }
@@ -457,14 +555,19 @@ function updateSummary(results) {
 
 function updateLastChecked() {
 
-    const now = new Date();
+    const now =
+        new Date();
 
-    elements.lastChecked.textContent =
-        now.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
-        });
+
+    lastChecked.textContent =
+        now.toLocaleTimeString(
+            [],
+            {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            }
+        );
 }
 
 
@@ -474,40 +577,53 @@ function updateLastChecked() {
 
 function updateHistory(results) {
 
-    const onlineResults =
-        results.filter(result => result.online);
+    const online =
+        results.filter(
+            result => result.online
+        );
 
 
-    if (!onlineResults.length) {
+    if (!online.length) {
 
         historyData.unshift({
+
             time: new Date(),
+
             ping: null,
+
             online: false
+
         });
 
     } else {
 
-        const averagePing =
+        const average =
             Math.round(
-                onlineResults.reduce(
+                online.reduce(
                     (sum, result) =>
                         sum + result.ping,
                     0
-                ) / onlineResults.length
+                ) / online.length
             );
 
 
         historyData.unshift({
+
             time: new Date(),
-            ping: averagePing,
+
+            ping: average,
+
             online: true
+
         });
     }
 
 
     historyData =
-        historyData.slice(0, MAX_HISTORY);
+        historyData.slice(
+            0,
+            MAX_HISTORY
+        );
 
 
     renderHistory();
@@ -516,15 +632,16 @@ function updateHistory(results) {
 
 function renderHistory() {
 
-    if (!elements.history) {
+    if (!historyContainer) {
         return;
     }
 
+
     if (!historyData.length) {
 
-        elements.history.innerHTML = `
-            <div class="empty-history">
-                No checks completed yet.
+        historyContainer.innerHTML = `
+            <div class="history-empty">
+                Waiting for the first server check...
             </div>
         `;
 
@@ -545,74 +662,68 @@ function renderHistory() {
         );
 
 
-    elements.history.innerHTML =
-        historyData.map(item => {
+    historyContainer.innerHTML =
+        historyData
+            .slice()
+            .reverse()
+            .map(item => {
 
-            const time =
-                item.time.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit"
-                });
+                const height =
+                    item.online
+                        ? Math.max(
+                            20,
+                            Math.min(
+                                100,
+                                (item.ping / maxPing) * 100
+                            )
+                        )
+                        : 20;
 
 
-            if (!item.online) {
+                const time =
+                    item.time.toLocaleTimeString(
+                        [],
+                        {
+                            hour: "2-digit",
+                            minute: "2-digit"
+                        }
+                    );
+
+
+                if (!item.online) {
+
+                    return `
+
+                        <div
+                            class="history-bar down"
+                            style="--height: 20%;">
+
+                            <span>
+                                OFF
+                            </span>
+
+                        </div>
+
+                    `;
+                }
+
 
                 return `
-                    <div class="history-item">
 
-                        <div class="history-time">
-                            ${time}
-                        </div>
+                    <div
+                        class="history-bar"
+                        style="--height: ${height}%;">
 
-                        <div class="history-bar-container">
-                            <div
-                                class="history-bar"
-                                style="width: 5%;">
-                            </div>
-                        </div>
-
-                        <div class="history-value">
-                            OFFLINE
-                        </div>
+                        <span>
+                            ${item.ping}ms
+                        </span>
 
                     </div>
+
                 `;
-            }
 
-
-            const width =
-                Math.max(
-                    5,
-                    Math.min(
-                        100,
-                        (item.ping / maxPing) * 100
-                    )
-                );
-
-
-            return `
-                <div class="history-item">
-
-                    <div class="history-time">
-                        ${time}
-                    </div>
-
-                    <div class="history-bar-container">
-                        <div
-                            class="history-bar"
-                            style="width: ${width}%;">
-                        </div>
-                    </div>
-
-                    <div class="history-value">
-                        ${item.ping} ms
-                    </div>
-
-                </div>
-            `;
-
-        }).join("");
+            })
+            .join("");
 }
 
 
@@ -622,76 +733,106 @@ function renderHistory() {
 
 function resetCountdown() {
 
-    countdown = CHECK_INTERVAL;
+    countdown =
+        CHECK_INTERVAL;
+
 
     updateCountdown();
 
 
     if (countdownTimer) {
 
-        clearInterval(countdownTimer);
+        clearInterval(
+            countdownTimer
+        );
     }
 
 
     countdownTimer =
-        setInterval(() => {
+        setInterval(
+            () => {
 
-            countdown--;
+                countdown--;
 
-            if (countdown <= 0) {
 
-                countdown = CHECK_INTERVAL;
+                if (countdown <= 0) {
 
-            }
+                    countdown =
+                        CHECK_INTERVAL;
+                }
 
-            updateCountdown();
 
-        }, 1000);
+                updateCountdown();
+
+            },
+            1000
+        );
 }
 
 
 function updateCountdown() {
 
-    if (!elements.nextCheck) {
+    if (!nextCheck) {
         return;
     }
 
-    elements.nextCheck.textContent =
+
+    nextCheck.textContent =
         `${countdown}s`;
 }
 
 
 /* =========================================================
-   ESCAPE HTML
+   HTML ESCAPE
    ========================================================= */
 
 function escapeHtml(value) {
 
     return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 }
 
 
 /* =========================================================
-   EVENT LISTENERS
+   EVENTS
    ========================================================= */
 
-if (elements.themeToggle) {
+if (themeToggle) {
 
-    elements.themeToggle.addEventListener(
+    themeToggle.addEventListener(
         "click",
         toggleTheme
     );
 }
 
 
-if (elements.checkButton) {
+if (checkButton) {
 
-    elements.checkButton.addEventListener(
+    checkButton.addEventListener(
         "click",
         checkServers
     );
@@ -712,7 +853,7 @@ checkServers();
 
 
 /* =========================================================
-   CHECK WHEN TAB BECOMES VISIBLE
+   CHECK AGAIN WHEN TAB RETURNS
    ========================================================= */
 
 document.addEventListener(
@@ -726,5 +867,6 @@ document.addEventListener(
 
             checkServers();
         }
+
     }
 );
