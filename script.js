@@ -6,6 +6,7 @@ const servers = [
 ];
 
 const CHECK_INTERVAL = 30;
+const REQUEST_TIMEOUT = 10000;
 
 let secondsUntilNextCheck = CHECK_INTERVAL;
 let countdownTimer = null;
@@ -25,35 +26,49 @@ const elements = {
 };
 
 
-/* ================================
+/* =========================================
    CHECK SERVER
-================================ */
+========================================= */
 
 async function checkServer(server) {
 
     const start = performance.now();
 
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+        controller.abort();
+    }, REQUEST_TIMEOUT);
+
     try {
 
         await fetch(server.url, {
             mode: "no-cors",
-            cache: "no-store"
+            cache: "no-store",
+            signal: controller.signal
         });
 
         const ping = Math.round(
             performance.now() - start
         );
 
+        clearTimeout(timeout);
+
         return {
             ...server,
             status: "ONLINE",
             statusClass: ping > 3000 ? "slow" : "online",
-            ping
+            ping: ping
         };
 
     } catch (error) {
 
-        console.error("Server check failed:", error);
+        clearTimeout(timeout);
+
+        console.warn(
+            "Server check failed:",
+            error
+        );
 
         return {
             ...server,
@@ -65,9 +80,9 @@ async function checkServer(server) {
 }
 
 
-/* ================================
+/* =========================================
    CHECK ALL SERVERS
-================================ */
+========================================= */
 
 async function checkServers() {
 
@@ -77,22 +92,32 @@ async function checkServers() {
 
     isChecking = true;
 
-    elements.checkButton.disabled = true;
-    elements.checkButton.innerHTML =
-        "<span>⟳</span> Checking...";
+    if (elements.checkButton) {
+        elements.checkButton.disabled = true;
 
-    elements.loading.textContent =
-        "Checking server connection...";
+        elements.checkButton.innerHTML =
+            "<span>⟳</span> Checking...";
+    }
+
+    if (elements.loading) {
+        elements.loading.textContent =
+            "Checking server connection...";
+    }
 
     try {
 
         const results = await Promise.all(
-            servers.map(checkServer)
+            servers.map(server =>
+                checkServer(server)
+            )
         );
 
         renderServers(results);
+
         updateSummary(results);
+
         updateHistory(results);
+
         updateLastChecked();
 
     } catch (error) {
@@ -104,26 +129,35 @@ async function checkServers() {
 
     } finally {
 
-        elements.loading.textContent =
-            "Monitoring automatically every 30 seconds";
-
-        elements.checkButton.disabled = false;
-
-        elements.checkButton.innerHTML =
-            "<span>↻</span> Check Server Now";
-
         isChecking = false;
+
+        if (elements.loading) {
+            elements.loading.textContent =
+                "Monitoring automatically every 30 seconds";
+        }
+
+        if (elements.checkButton) {
+
+            elements.checkButton.disabled = false;
+
+            elements.checkButton.innerHTML =
+                "<span>↻</span> Check Server Now";
+        }
 
         resetCountdown();
     }
 }
 
 
-/* ================================
-   SERVER CARDS
-================================ */
+/* =========================================
+   RENDER SERVER
+========================================= */
 
 function renderServers(results) {
+
+    if (!elements.container) {
+        return;
+    }
 
     elements.container.innerHTML = "";
 
@@ -134,9 +168,11 @@ function renderServers(results) {
 
         card.className =
             "server-card " +
-            (server.statusClass === "down"
-                ? "down"
-                : "");
+            (
+                server.statusClass === "down"
+                    ? "down"
+                    : ""
+            );
 
         card.style.animationDelay =
             `${index * 0.08}s`;
@@ -203,27 +239,44 @@ function renderServers(results) {
 }
 
 
-/* ================================
+/* =========================================
    SUMMARY
-================================ */
+========================================= */
 
 function updateSummary(results) {
 
-    const online =
+    const onlineServers =
         results.filter(
-            server => server.status === "ONLINE"
+            server =>
+                server.status === "ONLINE"
         );
 
-    const allOnline =
-        online.length === results.length;
+    const offlineServers =
+        results.filter(
+            server =>
+                server.status === "OFFLINE"
+        );
 
-    if (allOnline) {
+
+    /* Overall status */
+
+    if (offlineServers.length === 0) {
 
         elements.overallStatus.textContent =
             "ONLINE";
 
         elements.overallStatus.style.color =
             "var(--success)";
+
+    } else if (
+        onlineServers.length > 0
+    ) {
+
+        elements.overallStatus.textContent =
+            "PARTIAL";
+
+        elements.overallStatus.style.color =
+            "var(--warning)";
 
     } else {
 
@@ -235,8 +288,10 @@ function updateSummary(results) {
     }
 
 
-    const pings =
-        online
+    /* Response time */
+
+    const validPings =
+        onlineServers
             .map(server => server.ping)
             .filter(
                 ping =>
@@ -244,15 +299,15 @@ function updateSummary(results) {
             );
 
 
-    if (pings.length) {
+    if (validPings.length > 0) {
 
         const average =
             Math.round(
-                pings.reduce(
+                validPings.reduce(
                     (sum, value) =>
                         sum + value,
                     0
-                ) / pings.length
+                ) / validPings.length
             );
 
         elements.overallPing.textContent =
@@ -266,14 +321,16 @@ function updateSummary(results) {
 }
 
 
-/* ================================
+/* =========================================
    LAST CHECKED
-================================ */
+========================================= */
 
 function updateLastChecked() {
 
+    const now = new Date();
+
     elements.lastChecked.textContent =
-        new Date().toLocaleTimeString(
+        now.toLocaleTimeString(
             [],
             {
                 hour: "2-digit",
@@ -284,9 +341,9 @@ function updateLastChecked() {
 }
 
 
-/* ================================
+/* =========================================
    HISTORY
-================================ */
+========================================= */
 
 function updateHistory(results) {
 
@@ -309,7 +366,11 @@ function updateHistory(results) {
 
 function renderHistory() {
 
-    if (!historyData.length) {
+    if (!elements.history) {
+        return;
+    }
+
+    if (historyData.length === 0) {
 
         elements.history.innerHTML = `
             <div class="history-empty">
@@ -322,7 +383,7 @@ function renderHistory() {
 
     elements.history.innerHTML = "";
 
-    const pings =
+    const validPings =
         historyData
             .map(item => item.ping)
             .filter(
@@ -331,7 +392,11 @@ function renderHistory() {
             );
 
     const maxPing =
-        Math.max(1000, ...pings);
+        Math.max(
+            1000,
+            ...validPings
+        );
+
 
     historyData.forEach(item => {
 
@@ -340,16 +405,24 @@ function renderHistory() {
 
         let height = 30;
 
-        if (item.ping !== null) {
 
-            height = Math.max(
-                30,
-                Math.min(
-                    100,
-                    (item.ping / maxPing) * 100
-                )
-            );
+        if (
+            typeof item.ping === "number"
+        ) {
+
+            height =
+                Math.max(
+                    30,
+                    Math.min(
+                        100,
+                        (
+                            item.ping /
+                            maxPing
+                        ) * 100
+                    )
+                );
         }
+
 
         bar.className =
             "history-bar " +
@@ -359,10 +432,12 @@ function renderHistory() {
                     : ""
             );
 
+
         bar.style.setProperty(
             "--height",
             `${height}px`
         );
+
 
         const time =
             item.time.toLocaleTimeString(
@@ -373,10 +448,12 @@ function renderHistory() {
                 }
             );
 
+
         bar.title =
             item.ping === null
                 ? `${time} • Offline`
                 : `${time} • ${item.ping} ms`;
+
 
         bar.innerHTML = `
             <span>
@@ -388,14 +465,15 @@ function renderHistory() {
             </span>
         `;
 
+
         elements.history.appendChild(bar);
     });
 }
 
 
-/* ================================
+/* =========================================
    COUNTDOWN
-================================ */
+========================================= */
 
 function resetCountdown() {
 
@@ -430,25 +508,36 @@ function resetCountdown() {
 
 function updateCountdown() {
 
+    if (!elements.nextCheck) {
+        return;
+    }
+
     elements.nextCheck.textContent =
         `${secondsUntilNextCheck}s`;
 }
 
 
-/* ================================
-   THEME
-================================ */
+/* =========================================
+   DARK MODE
+========================================= */
 
 function setupTheme() {
+
+    if (!elements.themeToggle) {
+        return;
+    }
 
     const savedTheme =
         localStorage.getItem(
             "annaResultTheme"
         );
 
+
     if (savedTheme === "dark") {
 
-        document.body.classList.add("dark");
+        document.body.classList.add(
+            "dark"
+        );
 
         elements.themeToggle.textContent =
             "☀️";
@@ -485,9 +574,9 @@ function setupTheme() {
 }
 
 
-/* ================================
+/* =========================================
    ESCAPE HTML
-================================ */
+========================================= */
 
 function escapeHtml(value) {
 
@@ -500,21 +589,22 @@ function escapeHtml(value) {
 }
 
 
-/* ================================
-   MANUAL CHECK BUTTON
-================================ */
+/* =========================================
+   MANUAL BUTTON
+========================================= */
 
-elements.checkButton.addEventListener(
-    "click",
-    () => {
-        checkServers();
-    }
-);
+if (elements.checkButton) {
+
+    elements.checkButton.addEventListener(
+        "click",
+        checkServers
+    );
+}
 
 
-/* ================================
-   WHEN PAGE BECOMES VISIBLE
-================================ */
+/* =========================================
+   PAGE VISIBILITY
+========================================= */
 
 document.addEventListener(
     "visibilitychange",
@@ -533,9 +623,9 @@ document.addEventListener(
 );
 
 
-/* ================================
+/* =========================================
    START
-================================ */
+========================================= */
 
 setupTheme();
 
