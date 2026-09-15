@@ -4,83 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="theme-color" content="#071a3d">
-    <meta name="description" content="Anna University Result Server Status Monitor">
-
     <title>Anna University Result Server Monitor</title>
+
+    <meta name="description"
+          content="Live monitoring dashboard for Anna University Result Server.">
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <div class="background-glow glow-one"></div>
-    <div class="background-glow glow-two"></div>
+    <!-- Header -->
+    <header class="top-header">
+        <div class="header-content">
 
-    <header class="topbar">
+            <div class="brand">
+                <div class="brand-icon">🎓</div>
 
-        <div class="brand">
-
-            <div class="brand-icon">
-                🎓
+                <div>
+                    <h1>Anna University</h1>
+                    <p>Result Server Monitor</p>
+                </div>
             </div>
 
-            <div>
-                <h1>Anna University</h1>
-                <p>Result Server Monitor</p>
-            </div>
+            <button
+                id="themeToggle"
+                class="theme-button"
+                type="button"
+                aria-label="Toggle dark mode">
+                🌙
+            </button>
 
         </div>
-
-        <button
-            id="themeToggle"
-            class="theme-button"
-            type="button"
-            aria-label="Toggle dark mode"
-        >
-            🌙
-        </button>
-
     </header>
 
 
-    <main>
+    <!-- Main -->
+    <main class="container">
 
+        <!-- Hero -->
         <section class="hero">
 
-            <div class="hero-badge">
-                <span class="pulse-dot"></span>
-                LIVE SERVER MONITOR
+            <div class="hero-icon">
+                🖥️
             </div>
 
-            <h2>
-                Anna University
-                <span>Result Server Status</span>
-            </h2>
+            <div class="hero-content">
+                <h2>Anna University Result Server Status</h2>
 
-            <p>
-                Check the availability and response time of the
-                Anna University result server in real time.
-            </p>
+                <p>
+                    Real-time availability monitoring for the
+                    Anna University result server.
+                </p>
+            </div>
 
             <div class="hero-actions">
 
                 <button
                     id="checkButton"
                     class="primary-button"
-                    type="button"
-                >
-                    <span>↻</span>
-                    Check Server Now
+                    type="button">
+                    🔄 Check Now
                 </button>
 
                 <a
                     class="secondary-button"
                     href="https://coe.annauniv.edu/home/index.php"
                     target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Open Result Server ↗
+                    rel="noopener noreferrer">
+                    🌐 Open Result Server
                 </a>
 
             </div>
@@ -88,11 +80,12 @@
         </section>
 
 
+        <!-- Summary -->
         <section class="summary-grid">
 
             <div class="summary-card">
 
-                <div class="summary-icon">
+                <div class="summary-icon status-icon">
                     ●
                 </div>
 
@@ -101,7 +94,9 @@
                         Overall Status
                     </span>
 
-                    <strong id="overallStatus">
+                    <strong
+                        id="overallStatus"
+                        class="summary-value">
                         Checking...
                     </strong>
                 </div>
@@ -120,9 +115,13 @@
                         Response Time
                     </span>
 
-                    <strong id="overallPing">
-                        -- ms
+                    <strong
+                        id="overallPing"
+                        class="summary-value">
+                        --
                     </strong>
+
+                    <span class="summary-unit">ms</span>
                 </div>
 
             </div>
@@ -139,7 +138,9 @@
                         Last Checked
                     </span>
 
-                    <strong id="lastChecked">
+                    <strong
+                        id="lastChecked"
+                        class="summary-value">
                         --
                     </strong>
                 </div>
@@ -150,7 +151,7 @@
             <div class="summary-card">
 
                 <div class="summary-icon">
-                    🔄
+                    ⏱️
                 </div>
 
                 <div>
@@ -158,7 +159,9 @@
                         Next Check
                     </span>
 
-                    <strong id="nextCheck">
+                    <strong
+                        id="nextCheck"
+                        class="summary-value">
                         --
                     </strong>
                 </div>
@@ -168,127 +171,92 @@
         </section>
 
 
-        <section class="section">
+        <!-- Server section -->
+        <section class="section-card">
 
-            <div class="section-heading">
+            <div class="section-header">
 
                 <div>
+                    <h3>Server Status</h3>
 
-                    <span class="eyebrow">
-                        SERVER HEALTH
-                    </span>
-
-                    <h3>
-                        Current Server Status
-                    </h3>
-
+                    <p>
+                        Current availability of monitored servers
+                    </p>
                 </div>
 
-                <div id="loading" class="loading">
-                    Initializing...
+                <div
+                    id="loading"
+                    class="loading">
+                    Checking...
                 </div>
 
             </div>
 
-
-            <div
-                id="servers"
-                class="server-grid"
-            ></div>
-
-        </section>
-
-
-        <section class="section">
-
-            <div class="section-heading">
-
-                <div>
-
-                    <span class="eyebrow">
-                        PERFORMANCE
-                    </span>
-
-                    <h3>
-                        Response History
-                    </h3>
-
-                </div>
-
-                <span class="history-info">
-                    Last 10 checks
-                </span>
-
-            </div>
-
-
-            <div
-                id="history"
-                class="history-card"
-            >
-
-                <div class="history-empty">
-                    Waiting for the first server check...
-                </div>
-
+            <div id="servers" class="servers">
+                <!-- Server cards generated by JavaScript -->
             </div>
 
         </section>
 
 
+        <!-- History -->
+        <section class="section-card">
+
+            <div class="section-header">
+
+                <div>
+                    <h3>Response History</h3>
+
+                    <p>
+                        Recent server response times
+                    </p>
+                </div>
+
+            </div>
+
+            <div id="history" class="history">
+                <div class="empty-history">
+                    No checks completed yet.
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- Information -->
         <section class="info-grid">
 
             <div class="info-card">
+                <div class="info-icon">🔄</div>
 
-                <div class="info-card-icon">
-                    📡
-                </div>
-
-                <h3>
-                    Automatic Monitoring
-                </h3>
+                <h3>Automatic Monitoring</h3>
 
                 <p>
                     The server is checked automatically every
-                    <strong>30 seconds</strong>.
+                    30 seconds.
                 </p>
-
             </div>
 
 
             <div class="info-card">
+                <div class="info-icon">⚡</div>
 
-                <div class="info-card-icon">
-                    ⚡
-                </div>
-
-                <h3>
-                    Response Monitoring
-                </h3>
+                <h3>Response Time</h3>
 
                 <p>
-                    Response time is measured for every
-                    connection attempt.
+                    Response time is measured for every server check.
                 </p>
-
             </div>
 
 
             <div class="info-card">
+                <div class="info-icon">📱</div>
 
-                <div class="info-card-icon">
-                    📱
-                </div>
-
-                <h3>
-                    Mobile Friendly
-                </h3>
+                <h3>Mobile Friendly</h3>
 
                 <p>
-                    Designed for phones, tablets and desktop
-                    devices.
+                    Designed to work on phones, tablets and desktops.
                 </p>
-
             </div>
 
         </section>
@@ -296,28 +264,15 @@
     </main>
 
 
-    <footer>
-
-        <div class="footer-brand">
-            🎓 Anna University Result Server Monitor
-        </div>
+    <!-- Footer -->
+    <footer class="footer">
 
         <p>
-            An independent server availability monitoring tool.
+            Anna University Result Server Monitor
         </p>
 
-        <p class="copyright">
-
-            Made with ❤️ by
-
-            <a
-                href="https://github.com/DhinakaranElango"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-                Dhinakaran Elango
-            </a>
-
+        <p>
+            This website is an independent monitoring tool.
         </p>
 
     </footer>
